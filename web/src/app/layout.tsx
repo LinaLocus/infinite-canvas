@@ -7,8 +7,8 @@ import "./globals.css";
 import React from "react";
 
 export const metadata: Metadata = {
-    title: "无限画布",
-    description: "一个无限画布创作工具",
+    title: "Moon Studio",
+    description: "在 Moon 的无垠画境中，让 AI 创作跳出单次对话的局限，化作无界的连续推演",
 };
 
 export default function RootLayout({

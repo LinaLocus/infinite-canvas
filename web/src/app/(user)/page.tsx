@@ -41,17 +41,17 @@ export default function IndexPage() {
                 <div className="pointer-events-none absolute right-[23%] top-[48%] size-20 rounded-full border border-dashed border-stone-200 dark:border-stone-800" />
 
                 <div className="relative flex min-h-[620px] flex-col items-center justify-center pt-10 text-center">
-                    <h1 className="ai-title-aurora max-w-5xl text-balance text-5xl font-semibold tracking-normal sm:text-7xl lg:text-8xl">无限画布</h1>
+                    <h1 className="ai-title-aurora max-w-5xl text-balance text-5xl font-semibold tracking-normal sm:text-7xl lg:text-8xl">Moon Studio</h1>
                     <p className="mt-8 max-w-3xl text-balance text-lg leading-8 text-stone-500 dark:text-stone-400">
-                        在
+                        在 Moon 的无垠画境
                         <Highlighter action="underline" color="#FF9800">
-                            无限画布
+                            中，调用、串联与重组
                         </Highlighter>
-                        中生成、连接和重组
+                        每一个灵感节点；让 AI 创作
                         <Highlighter action="highlight" color="#87CEFA">
-                            图片、文字与图形
+                            跳出单次对话的局限
                         </Highlighter>
-                        ，让创作从单次生成变成连续推演。
+                        ，化作无界的连续推演。
                     </p>
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                         <Button type="primary" size="large" href={`/${primaryTool.slug}`} icon={<ArrowRight className="size-4" />} iconPlacement="end">
