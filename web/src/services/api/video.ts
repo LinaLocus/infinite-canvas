@@ -94,17 +94,84 @@ async function createOpenAIVideoTask(config: AiConfig, model: string, prompt: st
 
 async function pollOpenAIVideoTask(config: AiConfig, task: VideoGenerationTask, options?: RequestOptions): Promise<VideoGenerationTaskState> {
     try {
-        const video = unwrapVideoResponse((await axios.get<ApiVideoResponse>(aiApiUrl(config, `/videos/${task.id}`), { headers: aiHeaders(config), signal: options?.signal })).data);
-        if (video.status === "completed") {
-            const content = await axios.get<Blob>(aiApiUrl(config, `/videos/${task.id}/content`), { headers: aiHeaders(config), responseType: "blob", signal: options?.signal });
-            await assertVideoBlob(content.data);
-            return { status: "completed", result: { blob: content.data } };
+        // validateStatus: () => true —— 让 4xx 也返回 body，好统一解析 New API 的任务信封（含 task_not_exist）
+        const response = await axios.get<unknown>(aiApiUrl(config, `/videos/${task.id}`), { headers: aiHeaders(config), signal: options?.signal, validateStatus: () => true });
+        const info = normalizeVideoTaskInfo(response.data);
+        if (info.state === "completed") {
+            return { status: "completed", result: await fetchOpenAIVideoContent(config, task, info, options) };
         }
-        if (video.status === "failed" || video.status === "cancelled") return { status: "failed", error: video.error?.message || "视频生成失败" };
+        if (info.state === "failed") return { status: "failed", error: info.error || "视频生成失败" };
         return { status: "pending" };
     } catch (error) {
         throw new Error(readAxiosError(error, "视频任务查询失败"));
     }
+}
+
+type VideoTaskInfo = { state: "completed" | "failed" | "pending"; url?: string; error?: string };
+
+// 兼容两种响应：New API 任务信封 { code:"success", data:{ status:"SUCCESS", result_url } } 与扁平的 OpenAI 风格 { status:"completed" }
+function normalizeVideoTaskInfo(raw: unknown): VideoTaskInfo {
+    let task: Record<string, unknown> = (raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {});
+    const code = task.code;
+    if (typeof code === "string") {
+        // 任务尚未登记：刚创建完的竞态，当作进行中继续轮询，而不是直接失败
+        if (code === "task_not_exist" || code === "not_start") return { state: "pending" };
+        if (code !== "success") return { state: "failed", error: readEnvelopeMessage(task) };
+        task = (task.data && typeof task.data === "object" ? (task.data as Record<string, unknown>) : {});
+    } else if (typeof code === "number" && code !== 0) {
+        return { state: "failed", error: readEnvelopeMessage(task) };
+    }
+    const status = String((task.status as string) ?? "").toLowerCase();
+    const failReason = (task.fail_reason as string) || readNestedError(task);
+    const url = pickVideoUrl(task);
+    if (status === "success" || status === "succeeded" || status === "completed") return { state: "completed", url };
+    if (status === "failure" || status === "failed" || status === "cancelled" || status === "canceled" || status === "expired" || status === "unknown") {
+        return { state: "failed", error: failReason || "视频生成失败" };
+    }
+    return { state: "pending" };
+}
+
+function pickVideoUrl(task: Record<string, unknown>): string | undefined {
+    const candidates = [task.result_url, (task.content as Record<string, unknown>)?.video_url, (task.data as Record<string, unknown>)?.video_url, task.url, task.video_url];
+    for (const value of candidates) {
+        if (typeof value === "string" && /^https?:\/\//i.test(value)) return value;
+    }
+    return undefined;
+}
+
+function readEnvelopeMessage(payload: Record<string, unknown>): string {
+    const message = payload.message;
+    if (typeof message === "string" && message) return message;
+    if (message && typeof message === "object") {
+        const nested = (message as Record<string, unknown>).error;
+        if (nested && typeof nested === "object" && typeof (nested as Record<string, unknown>).message === "string") return (nested as Record<string, unknown>).message as string;
+    }
+    return "视频任务查询失败";
+}
+
+function readNestedError(task: Record<string, unknown>): string | undefined {
+    const error = task.error;
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object" && typeof (error as Record<string, unknown>).message === "string") return (error as Record<string, unknown>).message as string;
+    return undefined;
+}
+
+async function fetchOpenAIVideoContent(config: AiConfig, task: VideoGenerationTask, info: VideoTaskInfo, options?: RequestOptions): Promise<VideoGenerationResult> {
+    // 优先用任务返回的直连视频 URL
+    if (info.url) {
+        try {
+            const resp = await axios.get<Blob>(info.url, { responseType: "blob", signal: options?.signal });
+            await assertVideoBlob(resp.data);
+            return { blob: resp.data };
+        } catch (error) {
+            if (axios.isCancel(error) || options?.signal?.aborted) throw error;
+            return { url: info.url, mimeType: "video/mp4" };
+        }
+    }
+    // 回退到内容代理端点
+    const content = await axios.get<Blob>(aiApiUrl(config, `/videos/${task.id}/content`), { headers: aiHeaders(config), responseType: "blob", signal: options?.signal });
+    await assertVideoBlob(content.data);
+    return { blob: content.data };
 }
 
 async function createSeedanceTask(config: AiConfig, model: string, prompt: string, references: ReferenceImage[], videoReferences: ReferenceVideo[], audioReferences: ReferenceAudio[], options?: RequestOptions): Promise<VideoGenerationTask> {
