@@ -116,6 +116,8 @@ type ConfigStore = {
     webdav: WebdavSyncConfig;
     isConfigOpen: boolean;
     shouldPromptContinue: boolean;
+    locked: boolean;
+    setLocked: (locked: boolean) => void;
     updateConfig: <K extends keyof AiConfig>(key: K, value: AiConfig[K]) => void;
     updateWebdavConfig: <K extends keyof WebdavSyncConfig>(key: K, value: WebdavSyncConfig[K]) => void;
     isAiConfigReady: (config: AiConfig, model: string) => boolean;
@@ -176,6 +178,8 @@ export const useConfigStore = create<ConfigStore>()(
             webdav: defaultWebdavSyncConfig,
             isConfigOpen: false,
             shouldPromptContinue: false,
+            locked: false,
+            setLocked: (locked) => set({ locked }),
             updateConfig: (key, value) =>
                 set((state) => ({
                     config: {

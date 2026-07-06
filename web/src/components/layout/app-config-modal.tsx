@@ -67,6 +67,7 @@ export function AppConfigModal() {
     const [webdavDomainProgress, setWebdavDomainProgress] = useState(createWebdavDomainProgress);
     const config = useConfigStore((state) => state.config);
     const webdav = useConfigStore((state) => state.webdav);
+    const locked = useConfigStore((state) => state.locked);
     const updateConfig = useConfigStore((state) => state.updateConfig);
     const updateWebdavConfig = useConfigStore((state) => state.updateWebdavConfig);
     const isConfigOpen = useConfigStore((state) => state.isConfigOpen);
@@ -235,6 +236,13 @@ export function AppConfigModal() {
                         label: "渠道",
                         children: (
                             <Form layout="vertical" requiredMark={false}>
+                                {locked && (
+                                    <div className="mb-4 flex w-full items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1.5 text-xs text-blue-900 dark:border-blue-700/60 dark:bg-blue-950/30 dark:text-blue-100">
+                                        <CircleAlert className="size-3.5 shrink-0" />
+                                        <span className="font-semibold">已锁定为 Moon API 官方渠道：</span>
+                                        <span>Base URL 和 API Key 由 Moon API 自动配置，不可修改。</span>
+                                    </div>
+                                )}
                                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 p-3 dark:border-stone-800">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex w-fit max-w-full flex-wrap items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100">
@@ -250,9 +258,11 @@ export function AppConfigModal() {
                                         <Button icon={<RefreshCw className="size-4" />} loading={Boolean(loadingChannelId)} onClick={() => void refreshAllModels()}>
                                             拉取全部
                                         </Button>
-                                        <Button type="primary" icon={<Plus className="size-4" />} onClick={addChannel}>
-                                            新增渠道
-                                        </Button>
+                                        {!locked && (
+                                            <Button type="primary" icon={<Plus className="size-4" />} onClick={addChannel}>
+                                                新增渠道
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -269,7 +279,9 @@ export function AppConfigModal() {
                                                     <Button size="small" loading={loadingChannelId === channel.id} onClick={() => void refreshChannelModels(channel)}>
                                                         拉取模型
                                                     </Button>
-                                                    <Button size="small" danger icon={<Trash2 className="size-3.5" />} onClick={() => deleteChannel(channel.id)} />
+                                                    {!locked && (
+                                                        <Button size="small" danger icon={<Trash2 className="size-3.5" />} onClick={() => deleteChannel(channel.id)} />
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="grid gap-4 md:grid-cols-2">
@@ -277,13 +289,13 @@ export function AppConfigModal() {
                                                     <Input value={channel.name} onChange={(event) => updateChannel(channel.id, { name: event.target.value })} />
                                                 </Form.Item>
                                                 <Form.Item label="调用格式" className="mb-0">
-                                                    <Select value={channel.apiFormat} options={apiFormatOptions} onChange={(value: ApiCallFormat) => updateChannelApiFormat(channel, value)} />
+                                                    <Select value={channel.apiFormat} options={apiFormatOptions} disabled={locked} onChange={(value: ApiCallFormat) => updateChannelApiFormat(channel, value)} />
                                                 </Form.Item>
                                                 <Form.Item label="Base URL" className="mb-0">
-                                                    <Input value={channel.baseUrl} onChange={(event) => updateChannel(channel.id, { baseUrl: event.target.value })} />
+                                                    <Input value={channel.baseUrl} readOnly={locked} disabled={locked} onChange={(event) => updateChannel(channel.id, { baseUrl: event.target.value })} />
                                                 </Form.Item>
                                                 <Form.Item label="API Key" className="mb-0">
-                                                    <Input.Password value={channel.apiKey} onChange={(event) => updateChannel(channel.id, { apiKey: event.target.value })} />
+                                                    <Input.Password value={channel.apiKey} readOnly={locked} disabled={locked} onChange={(event) => updateChannel(channel.id, { apiKey: event.target.value })} />
                                                 </Form.Item>
                                                 <Form.Item label="模型列表" className="mb-0 md:col-span-2">
                                                     <Select mode="tags" showSearch allowClear maxTagCount="responsive" placeholder="输入模型名，或点击拉取模型" value={channel.models} onChange={(models) => updateChannel(channel.id, { models })} />

@@ -12,18 +12,22 @@ export function ClientRootInit({ children }: { children: ReactNode }) {
     const updateConfig = useConfigStore((state) => state.updateConfig);
     const config = useConfigStore((state) => state.config);
     const openConfigDialog = useConfigStore((state) => state.openConfigDialog);
+    const setLocked = useConfigStore((state) => state.setLocked);
 
     useEffect(() => {
         if (handledConfigParams.current) return;
         const searchParams = new URLSearchParams(window.location.search);
         const baseUrl = searchParams.get("baseUrl") || searchParams.get("baseurl");
         const apiKey = searchParams.get("apiKey") || searchParams.get("apikey");
+        const locked = searchParams.get("locked") === "1" || searchParams.get("locked") === "true";
         if (!baseUrl && !apiKey) return;
         handledConfigParams.current = true;
+        if (locked) setLocked(true);
         searchParams.delete("baseUrl");
         searchParams.delete("baseurl");
         searchParams.delete("apiKey");
         searchParams.delete("apikey");
+        searchParams.delete("locked");
         window.history.replaceState(null, "", `${window.location.pathname}${searchParams.size ? `?${searchParams}` : ""}${window.location.hash}`);
         const firstChannel = config.channels[0];
         updateConfig(
@@ -44,7 +48,7 @@ export function ClientRootInit({ children }: { children: ReactNode }) {
         if (apiKey) updateConfig("apiKey", apiKey);
         openConfigDialog(false);
         message.success("已导入本地直连配置");
-    }, [config.channels, message, openConfigDialog, updateConfig]);
+    }, [config.channels, message, openConfigDialog, updateConfig, setLocked]);
 
     return <>{children}</>;
 }
