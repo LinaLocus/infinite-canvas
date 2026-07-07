@@ -29,7 +29,6 @@ export function ClientRootInit({ children }: { children: ReactNode }) {
         searchParams.delete("apiKey");
         searchParams.delete("apikey");
         searchParams.delete("locked");
-        searchParams.delete("ticket");
         window.history.replaceState(null, "", `${window.location.pathname}${searchParams.size ? `?${searchParams}` : ""}${window.location.hash}`);
 
         // 深度绑定 Moon API：自动拉取模型 + 按能力分类 + 填入，全程不弹窗、失败不报错
