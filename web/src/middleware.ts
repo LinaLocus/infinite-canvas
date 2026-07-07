@@ -10,6 +10,8 @@ const SESSION_COOKIE = process.env.MOON_STUDIO_SESSION_COOKIE || "session";
 // 校验通过后的快速通行 cookie，短期有效，减少每次都回源校验；退出登录后最多它到期即失效
 const PASS_COOKIE = "ms_pass";
 const PASS_TTL_SECONDS = 60;
+// 顶层直接访问画布域名时，重定向到 Moon API 的正确入口（会注入密钥/配置）
+const MOON_STUDIO_ENTRY = process.env.MOON_STUDIO_ENTRY_URL || "https://api.moonisapi.com/moon-studio";
 
 async function isLoggedIn(request: NextRequest): Promise<boolean> {
     const sessionValue = request.cookies.get(SESSION_COOKIE)?.value;
@@ -36,6 +38,13 @@ function blockedResponse(): NextResponse {
 export async function middleware(request: NextRequest) {
     // 门禁未启用：放行（保持可用性）
     if (!GATE_ENABLED) return NextResponse.next();
+
+    // 顶层直接访问画布域名（Sec-Fetch-Dest=document）→ 重定向到 Moon API 的 Moon Studio 入口。
+    // 那里会用登录会话自动创建令牌并注入 apiKey/baseUrl/locked，从而自动配置 + 按用户余额计费。
+    // iframe 加载（Sec-Fetch-Dest=iframe）、画布内部导航与 API 请求不受影响。
+    if (request.headers.get("sec-fetch-dest") === "document") {
+        return NextResponse.redirect(MOON_STUDIO_ENTRY);
+    }
 
     // 快速通行 cookie 有效期内直接放行，避免每个请求都回源校验
     if (request.cookies.get(PASS_COOKIE)?.value === "1") {
