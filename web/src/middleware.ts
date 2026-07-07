@@ -50,7 +50,7 @@ async function verifyTicket(ticket: string): Promise<boolean> {
 }
 
 function blockedResponse(): NextResponse {
-    const html = `<!doctype html><html lang="zh"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Moon Studio</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif}main{text-align:center;padding:24px}h1{font-size:20px;margin:0 0 12px}p{color:#a3a3a3;margin:0 0 20px}a{color:#8b5cf6;text-decoration:none}</style></head><body><main><h1>请从 Moon API 进入 Moon Studio</h1><p>Moon Studio 需要通过 Moon API 账号访问，请勿直接打开本页面。</p><a href="https://moonisapi.com">前往 Moon API →</a></main></body></html>`;
+    const html = `<!doctype html><html lang="zh"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Moon Studio</title><style>body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0a0a0a;color:#e5e5e5;font-family:system-ui,-apple-system,sans-serif}main{text-align:center;padding:24px}h1{font-size:20px;margin:0 0 12px}p{color:#a3a3a3;margin:0 0 20px}a{color:#8b5cf6;text-decoration:none}</style></head><body><main><h1>请从 Moon API 进入 Moon Studio</h1><p>Moon Studio 需要通过 Moon API 账号访问，请勿直接打开本页面。</p><a href="https://api.moonisapi.com">前往 Moon API →</a></main></body></html>`;
     return new NextResponse(html, { status: 403, headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
