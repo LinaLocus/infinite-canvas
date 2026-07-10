@@ -304,8 +304,8 @@ function assertVideoConfig(config: AiConfig, model: string) {
 
 function normalizeVideoSeconds(value: string) {
     const seconds = Math.floor(Number(value) || 6);
-    // grok 等 CLI 视频模型仅支持 1–15 秒，上限钳到 15，避免上游报 "seconds must be between 1 and 15"
-    return String(Math.max(1, Math.min(15, seconds)));
+    // 上限钳到 16 秒（支持 16s 的视频模型）；仅支持 15s 的模型请勿选 16
+    return String(Math.max(1, Math.min(16, seconds)));
 }
 
 function normalizeVideoSize(value: string) {
